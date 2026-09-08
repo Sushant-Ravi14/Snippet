@@ -7,11 +7,17 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const signup = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { email, password, username } = req.body;
 
-    if (!username || !password) {
+    if (!email || !password || !username) {
       res.status(400);
-      throw new Error('Please provide username and password');
+      throw new Error('Please provide email, password and username');
+    }
+
+    const emailExists = await User.findOne({ email: email.toLowerCase() });
+    if (emailExists) {
+      res.status(400);
+      throw new Error('Email already exists');
     }
 
     const userExists = await User.findOne({ username: username.toLowerCase() });
@@ -25,6 +31,7 @@ const signup = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const user = await User.create({
+      email: email.toLowerCase(),
       username: username.toLowerCase(),
       passwordHash,
     });
@@ -48,7 +55,7 @@ const signup = async (req, res, next) => {
   } catch (error) {
     if (error.code === 11000) {
       res.status(400);
-      return next(new Error('Username already exists'));
+      return next(new Error('Email or username already exists'));
     }
     next(error);
   }
@@ -59,14 +66,14 @@ const signup = async (req, res, next) => {
 // @access  Public
 const login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
+    if (!email || !password) {
       res.status(400);
-      throw new Error('Please provide username and password');
+      throw new Error('Please provide email and password');
     }
 
-    const user = await User.findOne({ username: username.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (user && (await bcrypt.compare(password, user.passwordHash))) {
       res.json({
@@ -82,7 +89,7 @@ const login = async (req, res, next) => {
       });
     } else {
       res.status(401);
-      throw new Error('Invalid username or password');
+      throw new Error('Invalid email or password');
     }
   } catch (error) {
     next(error);

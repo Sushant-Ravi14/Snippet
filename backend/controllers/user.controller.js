@@ -65,13 +65,20 @@ const toggleFollow = async (req, res, next) => {
       targetUser.followers.push(currentUserId);
       currentUser.following.push(targetUserId);
       
-      // Optionally create notification here, but we will handle it in a bit or rely on notification model
+      // Optionally create notification here
       const Notification = require('../models/Notification');
-      await Notification.create({
+      const existingNotification = await Notification.findOne({
         recipient: targetUserId,
         actor: currentUserId,
-        type: 'follow'
+        type: 'follow',
       });
+      if (!existingNotification) {
+        await Notification.create({
+          recipient: targetUserId,
+          actor: currentUserId,
+          type: 'follow'
+        });
+      }
     }
 
     await targetUser.save();

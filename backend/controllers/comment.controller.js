@@ -29,14 +29,22 @@ const addComment = async (req, res, next) => {
 
     const populatedComment = await Comment.findById(comment._id).populate('author', 'username avatar');
 
-    // Notify post author if not self
+    // Notify post author if not self (avoid duplicate notifications)
     if (post.author.toString() !== req.user._id.toString()) {
-      await Notification.create({
+      const existingNotification = await Notification.findOne({
         recipient: post.author,
         actor: req.user._id,
         type: 'comment',
-        post: post._id
+        post: post._id,
       });
+      if (!existingNotification) {
+        await Notification.create({
+          recipient: post.author,
+          actor: req.user._id,
+          type: 'comment',
+          post: post._id
+        });
+      }
     }
 
     res.status(201).json({

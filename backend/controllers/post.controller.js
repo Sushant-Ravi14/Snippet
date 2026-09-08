@@ -67,8 +67,8 @@ const getFeed = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const currentUser = await User.findById(req.user._id);
-    const followingIds = currentUser.following;
-    followingIds.push(req.user._id); // Include self
+    // Use a plain array copy to avoid mutating the Mongoose document's following array
+    const followingIds = [...currentUser.following, req.user._id];
 
     const posts = await Post.find({ author: { $in: followingIds } })
       .populate('author', 'username avatar')
@@ -164,14 +164,22 @@ const toggleLike = async (req, res, next) => {
       post.likes.push(currentUserId);
       post.dislikes.pull(currentUserId); // clear dislike if present
       
-      // Notify author if it's not their own post
+      // Notify author if it's not their own post (avoid duplicate notifications)
       if (post.author.toString() !== currentUserId.toString()) {
-        await Notification.create({
+        const existingNotification = await Notification.findOne({
           recipient: post.author,
           actor: currentUserId,
           type: 'like',
-          post: post._id
+          post: post._id,
         });
+        if (!existingNotification) {
+          await Notification.create({
+            recipient: post.author,
+            actor: currentUserId,
+            type: 'like',
+            post: post._id
+          });
+        }
       }
     }
 

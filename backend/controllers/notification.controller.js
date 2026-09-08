@@ -21,6 +21,7 @@ const getNotifications = async (req, res, next) => {
 
     // Optionally mark them as read when fetched, or have a separate route.
     // We'll mark them as read here for simplicity unless specified otherwise.
+    // Mark unread notifications as read
     const unreadIds = notifications.filter(n => !n.read).map(n => n._id);
     if (unreadIds.length > 0) {
       await Notification.updateMany(
@@ -29,7 +30,14 @@ const getNotifications = async (req, res, next) => {
       );
     }
 
-    res.json(notifications);
+    // Update the read status in the response objects so frontend gets accurate data
+    const updatedNotifications = notifications.map(n => {
+      const obj = n.toObject();
+      obj.read = true;
+      return obj;
+    });
+
+    res.json(updatedNotifications);
   } catch (error) {
     next(error);
   }
