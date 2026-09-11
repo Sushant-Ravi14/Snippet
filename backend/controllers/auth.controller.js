@@ -7,24 +7,33 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const signup = async (req, res, next) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !password || !username) {
+    if (!email || !password) {
       res.status(400);
-      throw new Error('Please provide email, password and username');
+      throw new Error('Please provide email and password');
     }
 
     const emailExists = await User.findOne({ email: email.toLowerCase() });
     if (emailExists) {
       res.status(400);
-      throw new Error('Email already exists');
+      throw new Error('An account with this email already exists');
     }
 
-    const userExists = await User.findOne({ username: username.toLowerCase() });
+    // Auto-generate username from email prefix
+    let baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (baseUsername.length < 3) baseUsername = baseUsername + '_user';
 
-    if (userExists) {
-      res.status(400);
-      throw new Error('Username already exists');
+    // Ensure username is unique — append random digits if taken
+    let username = baseUsername;
+    let attempts = 0;
+    while (await User.findOne({ username })) {
+      attempts++;
+      username = baseUsername + '_' + Math.floor(Math.random() * 9000 + 1000);
+      if (attempts > 5) {
+        username = baseUsername + '_' + Date.now().toString(36);
+        break;
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -32,7 +41,7 @@ const signup = async (req, res, next) => {
 
     const user = await User.create({
       email: email.toLowerCase(),
-      username: username.toLowerCase(),
+      username,
       passwordHash,
     });
 
@@ -55,7 +64,7 @@ const signup = async (req, res, next) => {
   } catch (error) {
     if (error.code === 11000) {
       res.status(400);
-      return next(new Error('Email or username already exists'));
+      return next(new Error('Email already exists'));
     }
     next(error);
   }

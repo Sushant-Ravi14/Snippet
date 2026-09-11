@@ -1,74 +1,43 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/config';
-import { debounce } from '../../src/utils/helpers';
-import { checkUsername } from '../../src/api/client';
 
 const SignupScreen = () => {
-  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(null);
-  const [checkingUsername, setCheckingUsername] = useState(false);
   
   const { signup } = useAuth();
   const router = useRouter();
 
-  const checkAvailability = useCallback(
-    debounce(async (val) => {
-      if (!val) {
-        setUsernameAvailable(null);
-        setCheckingUsername(false);
-        return;
-      }
-      try {
-        const { data } = await checkUsername(val);
-        setUsernameAvailable(data.available);
-      } catch (err) {
-        console.error('Failed to check username');
-      } finally {
-        setCheckingUsername(false);
-      }
-    }, 400),
-    []
-  );
-
-  const handleUsernameChange = (val) => {
-    setUsername(val);
-    setUsernameAvailable(null);
-    setCheckingUsername(true);
-    checkAvailability(val);
-  };
-
-  const handleNext = () => {
+  const handleSignup = async () => {
     if (!email || !password) {
       setError('Please fill in email and password');
       return;
     }
-    setError('');
-    setStep(2);
-  };
 
-  const handleSignup = async () => {
-    if (!username) {
-      setError('Please choose a username');
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
-    if (usernameAvailable === false) {
-      setError('Username is not available');
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
+
     try {
       setLoading(true);
       setError('');
-      await signup(email, password, username);
+      await signup(email, password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      const msg = err.response?.data?.message || 'Signup failed';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -80,65 +49,48 @@ const SignupScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>SocialFeed</Text>
+        <Image 
+          source={require('../../assets/splash-icon.png')} 
+          style={styles.logo} 
+          resizeMode="contain" 
+        />
+        <Text style={styles.subtitle}>Your username will be created from your email</Text>
         
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        {step === 1 ? (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TextInput
-              style={[styles.input, { marginTop: 15 }]}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={handleNext}
-            >
-              <Text style={styles.buttonText}>Next</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                value={username}
-                onChangeText={handleUsernameChange}
-                autoCapitalize="none"
-              />
-              {checkingUsername && <ActivityIndicator size="small" color={COLORS.primary} style={styles.indicator} />}
-              {!checkingUsername && usernameAvailable === true && <Text style={styles.successText}>Available</Text>}
-              {!checkingUsername && usernameAvailable === false && <Text style={styles.errorText}>Taken</Text>}
-            </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={[styles.input, { marginTop: 15 }]}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-            <TouchableOpacity 
-              style={styles.button} 
-              onPress={handleSignup}
-              disabled={loading || checkingUsername || usernameAvailable === false}
-            >
-              {loading ? (
-                <ActivityIndicator color={COLORS.background} />
-              ) : (
-                <Text style={styles.buttonText}>Sign Up</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setStep(1)} style={styles.link}>
-              <Text style={styles.linkText}>Back</Text>
-            </TouchableOpacity>
-          </>
+        {email && /^[^\s@]+@/.test(email) && (
+          <Text style={styles.usernamePreview}>
+            Your username will be: <Text style={styles.usernameHighlight}>@{email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_')}</Text>
+          </Text>
         )}
+
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={COLORS.background} />
+          ) : (
+            <Text style={styles.buttonText}>Sign Up</Text>
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.link}>
           <Text style={styles.linkText}>Already have an account? Log in</Text>
@@ -158,16 +110,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: 40,
+  logo: {
+    width: 250,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 8,
   },
-  inputContainer: {
-    position: 'relative',
-    justifyContent: 'center',
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    marginBottom: 30,
   },
   input: {
     backgroundColor: COLORS.surface,
@@ -176,21 +129,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  indicator: {
-    position: 'absolute',
-    right: 15,
+  usernamePreview: {
+    marginTop: 12,
+    fontSize: 13,
+    color: COLORS.textMuted,
+    textAlign: 'center',
   },
-  successText: {
-    position: 'absolute',
-    right: 15,
-    color: COLORS.success,
-    fontSize: 12,
-  },
-  errorText: {
-    position: 'absolute',
-    right: 15,
-    color: COLORS.error,
-    fontSize: 12,
+  usernameHighlight: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
   button: {
     backgroundColor: COLORS.primary,
@@ -198,6 +145,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 25,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: COLORS.background,

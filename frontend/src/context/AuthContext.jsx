@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import storage from '../utils/storage';
 import { getMe, login as apiLogin, signup as apiSignup } from '../api/client';
 
 const AuthContext = createContext(null);
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
 
   const bootstrapAsync = async () => {
     try {
-      const storedToken = await SecureStore.getItemAsync('token');
+      const storedToken = storage.getItem('token');
       if (storedToken) {
         setToken(storedToken);
         // Validate token by fetching user profile
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (e) {
       console.log('Restoring token failed', e);
-      await SecureStore.deleteItemAsync('token');
+      storage.deleteItem('token');
     } finally {
       setLoading(false);
     }
@@ -34,20 +34,20 @@ export const AuthProvider = ({ children }) => {
     const { data } = await apiLogin({ email, password });
     setUser(data.user);
     setToken(data.token);
-    await SecureStore.setItemAsync('token', data.token);
+    storage.setItem('token', data.token);
   };
 
-  const signup = async (email, password, username) => {
-    const { data } = await apiSignup({ email, password, username });
+  const signup = async (email, password) => {
+    const { data } = await apiSignup({ email, password });
     setUser(data.user);
     setToken(data.token);
-    await SecureStore.setItemAsync('token', data.token);
+    storage.setItem('token', data.token);
   };
 
   const logout = async () => {
     setUser(null);
     setToken(null);
-    await SecureStore.deleteItemAsync('token');
+    storage.deleteItem('token');
   };
 
   return (

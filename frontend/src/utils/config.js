@@ -2,7 +2,13 @@
 // You might need to change this to your computer's local IP address if testing on a physical device.
 import { Platform } from 'react-native';
 
-const HOST = Platform.OS === 'android' ? '192.168.1.75' : '192.168.1.75';
+const getHost = () => {
+  if (Platform.OS === 'web') return 'localhost';
+  if (Platform.OS === 'android') return '10.211.149.235';
+  return '10.211.149.235';
+};
+
+const HOST = getHost();
 export const API_BASE_URL = `http://${HOST}:5000/api`;
 export const UPLOADS_BASE_URL = `http://${HOST}:5000`;
 

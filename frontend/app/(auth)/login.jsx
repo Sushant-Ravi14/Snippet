@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/config';
@@ -34,7 +34,11 @@ const LoginScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>SocialFeed</Text>
+        <Image 
+          source={require('../../assets/splash-icon.png')} 
+          style={styles.logo} 
+          resizeMode="contain" 
+        />
         
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -84,11 +88,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    textAlign: 'center',
+  logo: {
+    width: 250,
+    height: 100,
+    alignSelf: 'center',
     marginBottom: 40,
   },
   input: {
