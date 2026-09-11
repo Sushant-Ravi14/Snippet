@@ -1,6 +1,8 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const fs = require('fs');
+const path = require('path');
 
 const formatPostResponse = (post, currentUserId) => {
   return {
@@ -32,10 +34,19 @@ const formatPostResponse = (post, currentUserId) => {
 const createPost = async (req, res, next) => {
   try {
     const { title, text, latitude, longitude, locality } = req.body;
-    let imagePath = null;
+    let imageData = null;
 
     if (req.file) {
-      imagePath = `/uploads/${req.file.filename}`;
+      // Read the uploaded file and convert to base64 data URI
+      // This stores the image in MongoDB so it survives Render restarts
+      const filePath = req.file.path;
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64 = fileBuffer.toString('base64');
+      const mimeType = req.file.mimetype || 'image/jpeg';
+      imageData = `data:${mimeType};base64,${base64}`;
+      
+      // Clean up the temp file from disk
+      try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
     }
 
     let location = undefined;
@@ -51,7 +62,7 @@ const createPost = async (req, res, next) => {
       author: req.user._id,
       title,
       text,
-      image: imagePath,
+      image: imageData,
       location,
     });
 

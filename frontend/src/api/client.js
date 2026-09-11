@@ -3,13 +3,13 @@ import storage from '../utils/storage';
 import { API_BASE_URL } from '../utils/config';
 
 const client = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL
 });
 
 // Request interceptor to attach token
 client.interceptors.request.use(
   async (config) => {
-    const token = storage.getItem('token');
+    const token = await storage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

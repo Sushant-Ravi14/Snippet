@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, ActivityIndicator, StyleSheet, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFeed, toggleLike, toggleDislike } from '../../src/api/client';
 import PostCard from '../../src/components/PostCard';
 import EmptyState from '../../src/components/EmptyState';
@@ -105,18 +106,24 @@ const HomeFeedScreen = () => {
 
   if (loading && page === 1 && !refreshing) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error && posts.length === 0) {
-    return <EmptyState message={error} subMessage="Pull down to refresh" />;
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <EmptyState message={error} subMessage="Pull down to refresh" />
+      </SafeAreaView>
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item._id}
@@ -139,7 +146,7 @@ const HomeFeedScreen = () => {
           ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

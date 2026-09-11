@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { COLORS, UPLOADS_BASE_URL } from '../utils/config';
+import { getAvatarUrl } from '../utils/helpers';
 import { useRouter } from 'expo-router';
 
 const UserRow = ({ user, onToggleFollow }) => {
   const router = useRouter();
   if (!user) return null;
 
-  const avatarSource = user.avatar.startsWith('http')
-    ? user.avatar
-    : `${UPLOADS_BASE_URL}/${user.avatar}`;
+  const userUsername = user?.username || 'deleted_user';
+  const userAvatar = user?.avatar;
+  const avatarSource = getAvatarUrl(userAvatar, userUsername);
 
   return (
     <TouchableOpacity 
@@ -20,11 +20,10 @@ const UserRow = ({ user, onToggleFollow }) => {
       <Image
         source={{ uri: avatarSource }}
         style={styles.avatar}
-        contentFit="cover"
-        cachePolicy="memory-disk"
+        resizeMode="cover"
       />
       <View style={styles.info}>
-        <Text style={styles.username}>@{user.username}</Text>
+        <Text style={styles.username}>@{userUsername}</Text>
         {user.bio ? <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text> : null}
       </View>
       {onToggleFollow && (

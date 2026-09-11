@@ -61,6 +61,7 @@ const SignupScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor={COLORS.textMuted}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -69,16 +70,17 @@ const SignupScreen = () => {
         <TextInput
           style={[styles.input, { marginTop: 15 }]}
           placeholder="Password"
+          placeholderTextColor={COLORS.textMuted}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        {email && /^[^\s@]+@/.test(email) && (
+        {!!email && /^[^\s@]+@/.test(email) ? (
           <Text style={styles.usernamePreview}>
             Your username will be: <Text style={styles.usernameHighlight}>@{email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_')}</Text>
           </Text>
-        )}
+        ) : null}
 
         <TouchableOpacity 
           style={[styles.button, loading && styles.buttonDisabled]} 
@@ -128,6 +130,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
+    color: COLORS.text,
   },
   usernamePreview: {
     marginTop: 12,

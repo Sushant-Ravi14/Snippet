@@ -1,27 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { COLORS, UPLOADS_BASE_URL } from '../utils/config';
-import { timeAgo } from '../utils/helpers';
+import { timeAgo, getAvatarUrl } from '../utils/helpers';
 
 const CommentItem = ({ comment }) => {
   if (!comment) return null;
 
-  const avatarSource = comment.author.avatar.startsWith('http')
-    ? comment.author.avatar
-    : `${UPLOADS_BASE_URL}/${comment.author.avatar}`;
+  const authorUsername = comment.author?.username || 'deleted_user';
+  const authorAvatar = comment.author?.avatar;
+  const avatarSource = getAvatarUrl(authorAvatar, authorUsername);
 
   return (
     <View style={styles.container}>
       <Image
         source={{ uri: avatarSource }}
         style={styles.avatar}
-        contentFit="cover"
-        cachePolicy="memory-disk"
+        resizeMode="cover"
       />
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.username}>@{comment.author.username}</Text>
+          <Text style={styles.username}>@{authorUsername}</Text>
           <Text style={styles.time}>{timeAgo(comment.createdAt)}</Text>
         </View>
         <Text style={styles.text}>{comment.text}</Text>

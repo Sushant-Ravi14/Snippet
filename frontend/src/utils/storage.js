@@ -6,27 +6,27 @@ import * as SecureStore from 'expo-secure-store';
  * Uses expo-secure-store on native (iOS/Android) and localStorage on web.
  */
 const storage = {
-  getItem(key) {
+  async getItem(key) {
     if (Platform.OS === 'web') {
       return localStorage.getItem(key);
     }
-    return SecureStore.getItem(key);
+    return await SecureStore.getItemAsync(key);
   },
 
-  setItem(key, value) {
+  async setItem(key, value) {
     if (Platform.OS === 'web') {
       localStorage.setItem(key, value);
       return;
     }
-    SecureStore.setItem(key, value);
+    await SecureStore.setItemAsync(key, value);
   },
 
-  deleteItem(key) {
+  async deleteItem(key) {
     if (Platform.OS === 'web') {
       localStorage.removeItem(key);
       return;
     }
-    SecureStore.deleteItem(key);
+    await SecureStore.deleteItemAsync(key);
   },
 };
 

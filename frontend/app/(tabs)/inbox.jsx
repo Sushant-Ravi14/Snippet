@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNotifications } from '../../src/api/client';
 import { COLORS, UPLOADS_BASE_URL, PAGE_SIZE } from '../../src/utils/config';
 import EmptyState from '../../src/components/EmptyState';
-import { timeAgo } from '../../src/utils/helpers';
+import { timeAgo, getAvatarUrl } from '../../src/utils/helpers';
 
 const InboxScreen = () => {
   const router = useRouter();
@@ -55,9 +55,9 @@ const InboxScreen = () => {
   };
 
   const renderItem = ({ item }) => {
-    const avatarSource = item.actor.avatar.startsWith('http')
-      ? item.actor.avatar
-      : `${UPLOADS_BASE_URL}/${item.actor.avatar}`;
+    const actorUsername = item.actor?.username || 'deleted_user';
+    const actorAvatar = item.actor?.avatar;
+    const avatarSource = getAvatarUrl(actorAvatar, actorUsername);
 
     let text = '';
     if (item.type === 'follow') text = 'started following you';
@@ -69,16 +69,16 @@ const InboxScreen = () => {
         style={[styles.itemContainer, !item.read && styles.unread]}
         onPress={() => handlePress(item)}
       >
-        <Image source={{ uri: avatarSource }} style={styles.avatar} />
+        <Image source={{ uri: avatarSource, headers: { 'Bypass-Tunnel-Reminder': 'true' } }} style={styles.avatar} />
         <View style={styles.content}>
           <Text style={styles.text}>
-            <Text style={styles.username}>@{item.actor.username}</Text> {text}
+            <Text style={styles.username}>@{actorUsername}</Text> {text}
           </Text>
           <Text style={styles.time}>{timeAgo(item.createdAt)}</Text>
         </View>
         {item.post?.image && (
           <Image 
-            source={{ uri: item.post.image.startsWith('http') ? item.post.image : `${UPLOADS_BASE_URL}${item.post.image}` }} 
+            source={{ uri: item.post.image.startsWith('data:') || item.post.image.startsWith('http') ? item.post.image : `${UPLOADS_BASE_URL}${item.post.image}` }} 
             style={styles.postThumb} 
           />
         )}
@@ -87,7 +87,7 @@ const InboxScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Inbox</Text>
       </View>
@@ -107,7 +107,7 @@ const InboxScreen = () => {
           ListFooterComponent={loading && page > 1 ? <ActivityIndicator style={{ padding: 20 }} color={COLORS.primary} /> : null}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 10,
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unread: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: '#1E293B',
   },
   avatar: {
     width: 46,

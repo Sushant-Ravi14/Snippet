@@ -129,6 +129,8 @@ const PostDetailScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Add a comment..."
+          placeholderTextColor={COLORS.textMuted}
+          color={COLORS.text}
           value={commentText}
           onChangeText={setCommentText}
           multiline
@@ -168,6 +170,7 @@ const styles = StyleSheet.create({
   commentsTitle: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: COLORS.text,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -186,6 +189,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     borderWidth: 1,
     borderColor: COLORS.border,
+    color: COLORS.text,
   },
   postBtn: {
     backgroundColor: COLORS.primary,

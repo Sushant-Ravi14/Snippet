@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { getUserProfile, toggleFollow } from '../../src/api/client';
-import { COLORS, UPLOADS_BASE_URL } from '../../src/utils/config';
+import { COLORS } from '../../src/utils/config';
 import EmptyState from '../../src/components/EmptyState';
+import { getAvatarUrl } from '../../src/utils/helpers';
 import { useAuth } from '../../src/context/AuthContext';
 
 const UserProfileScreen = () => {
@@ -62,17 +63,19 @@ const UserProfileScreen = () => {
   }
 
   if (!profile) {
-    return <EmptyState message="User not found" />;
+    return (
+      <View style={styles.container}>
+        <EmptyState message="User not found" />
+      </View>
+    );
   }
 
-  const avatarSource = profile.avatar.startsWith('http')
-    ? profile.avatar
-    : `${UPLOADS_BASE_URL}/${profile.avatar}`;
+  const avatarSource = getAvatarUrl(profile.avatar, profile.username);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={{ uri: avatarSource }} style={styles.avatar} />
+        <Image source={{ uri: avatarSource, headers: { 'Bypass-Tunnel-Reminder': 'true' } }} style={styles.avatar} />
         <Text style={styles.username}>@{profile.username}</Text>
         {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
 
@@ -150,6 +153,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.text,
   },
   statLabel: {
     color: COLORS.textMuted,

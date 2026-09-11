@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { searchUsers, searchPosts, toggleFollow, toggleLike, toggleDislike } from '../../src/api/client';
 import UserRow from '../../src/components/UserRow';
 import PostCard from '../../src/components/PostCard';
@@ -110,11 +111,12 @@ const SearchScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search..."
+          placeholderTextColor={COLORS.textMuted}
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"
@@ -158,7 +160,7 @@ const SearchScreen = () => {
           ListFooterComponent={loading && page > 1 ? <ActivityIndicator style={{ padding: 20 }} color={COLORS.primary} /> : null}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.background,
-    paddingTop: 50,
+    paddingTop: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -181,6 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
+    color: COLORS.text,
   },
   tabs: {
     flexDirection: 'row',

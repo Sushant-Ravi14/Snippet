@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
 
   const bootstrapAsync = async () => {
     try {
-      const storedToken = storage.getItem('token');
+      const storedToken = await storage.getItem('token');
       if (storedToken) {
         setToken(storedToken);
         // Validate token by fetching user profile
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (e) {
       console.log('Restoring token failed', e);
-      storage.deleteItem('token');
+      await storage.deleteItem('token');
     } finally {
       setLoading(false);
     }
@@ -34,20 +34,20 @@ export const AuthProvider = ({ children }) => {
     const { data } = await apiLogin({ email, password });
     setUser(data.user);
     setToken(data.token);
-    storage.setItem('token', data.token);
+    await storage.setItem('token', data.token);
   };
 
   const signup = async (email, password) => {
     const { data } = await apiSignup({ email, password });
     setUser(data.user);
     setToken(data.token);
-    storage.setItem('token', data.token);
+    await storage.setItem('token', data.token);
   };
 
   const logout = async () => {
     setUser(null);
     setToken(null);
-    storage.deleteItem('token');
+    await storage.deleteItem('token');
   };
 
   return (

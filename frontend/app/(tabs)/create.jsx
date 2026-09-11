@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image as RNImage } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image as RNImage, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { createPost } from '../../src/api/client';
 import { compressImage, getFormattedLocation } from '../../src/utils/helpers';
@@ -8,6 +10,7 @@ import { COLORS } from '../../src/utils/config';
 
 const CreatePostScreen = () => {
   const router = useRouter();
+  const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
   const [location, setLocation] = useState(null);
@@ -56,22 +59,42 @@ const CreatePostScreen = () => {
   };
 
   const handleSubmit = async () => {
-    if (!text && !image) return;
+    if (!text && !image && !title) return;
     try {
       setLoading(true);
       const formData = new FormData();
+      if (title) formData.append('title', title);
       if (text) formData.append('text', text);
       
       if (image) {
-        const filename = image.uri.split('/').pop() || 'image.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
-        
-        formData.append('image', {
-          uri: image.uri,
-          name: filename,
-          type,
-        });
+        if (Platform.OS === 'web') {
+          const response = await fetch(image.uri);
+          const blob = await response.blob();
+          
+          let filename = image.uri.split('/').pop() || 'image.jpg';
+          const type = blob.type || 'image/jpeg';
+          
+          if (!filename.includes('.')) {
+            const ext = type.split('/')[1] || 'jpg';
+            filename = `${filename}.${ext}`;
+          }
+          
+          formData.append('image', new File([blob], filename, { type }));
+        } else {
+          let filename = image.uri.split('/').pop() || 'image.jpg';
+          // Ensure filename always has a .jpg extension (compressed images may lack one)
+          if (!/\.\w+$/.test(filename)) {
+            filename = `${filename}.jpg`;
+          }
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : 'image/jpeg';
+          
+          formData.append('image', {
+            uri: image.uri,
+            name: filename,
+            type,
+          });
+        }
       }
 
       if (location) {
@@ -83,6 +106,7 @@ const CreatePostScreen = () => {
       await createPost(formData);
       
       // Reset form
+      setTitle('');
       setText('');
       setImage(null);
       setLocation(null);
@@ -96,14 +120,17 @@ const CreatePostScreen = () => {
     }
   };
 
+  const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  const isOverLimit = wordCount > 750;
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Create Post</Text>
         <TouchableOpacity 
-          style={[styles.postBtn, (!text && !image) ? styles.postBtnDisabled : null]} 
+          style={[styles.postBtn, (!text && !image && !title) || isOverLimit ? styles.postBtnDisabled : null]} 
           onPress={handleSubmit}
-          disabled={loading || (!text && !image)}
+          disabled={loading || (!text && !image && !title) || isOverLimit}
         >
           {loading ? (
             <ActivityIndicator color={COLORS.background} size="small" />
@@ -114,48 +141,60 @@ const CreatePostScreen = () => {
       </View>
 
       <TextInput
+        style={styles.titleInput}
+        placeholder="Post Title (optional)"
+        placeholderTextColor={COLORS.textMuted}
+        value={title}
+        onChangeText={setTitle}
+        maxLength={100}
+      />
+      <TextInput
         style={styles.input}
         placeholder="What's on your mind?"
+        placeholderTextColor={COLORS.textMuted}
         value={text}
         onChangeText={setText}
         multiline
-        maxLength={500}
       />
+      <Text style={[styles.wordCount, isOverLimit && styles.wordCountError]}>
+        {wordCount} / 750 words
+      </Text>
 
       {image && (
         <View style={styles.imagePreviewContainer}>
           <RNImage source={{ uri: image.uri }} style={styles.imagePreview} />
           <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImage(null)}>
-            <Text style={styles.removeImageText}>X</Text>
+            <Ionicons name="close" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
 
       {location && (
         <View style={styles.locationChip}>
-          <Text style={styles.locationText}>📍 {location.locality}</Text>
-          <TouchableOpacity onPress={() => setLocation(null)}>
-            <Text style={styles.removeLocationText}> X</Text>
+          <Ionicons name="location" size={16} color={COLORS.primary} style={{ marginRight: 4 }} />
+          <Text style={styles.locationText}>{location.locality}</Text>
+          <TouchableOpacity onPress={() => setLocation(null)} style={{ marginLeft: 8 }}>
+            <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.toolbar}>
         <TouchableOpacity style={styles.toolBtn} onPress={() => pickImage(true)}>
-          <Text style={styles.toolText}>📷 Camera</Text>
+          <Ionicons name="camera-outline" size={26} color={COLORS.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.toolBtn} onPress={() => pickImage(false)}>
-          <Text style={styles.toolText}>🖼️ Gallery</Text>
+          <Ionicons name="images-outline" size={26} color={COLORS.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.toolBtn} onPress={handleAttachLocation} disabled={locationLoading}>
           {locationLoading ? (
             <ActivityIndicator size="small" color={COLORS.primary} />
           ) : (
-            <Text style={styles.toolText}>📍 Location</Text>
+            <Ionicons name="location-outline" size={26} color={COLORS.text} />
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -171,11 +210,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    paddingTop: 50, // Safe area roughly
+    paddingTop: 10, // Safe area handled by SafeAreaView
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: COLORS.text,
   },
   postBtn: {
     backgroundColor: COLORS.primary,
@@ -190,11 +230,30 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontWeight: 'bold',
   },
+  titleInput: {
+    padding: 15,
+    fontSize: 18,
+    fontWeight: 'bold',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    color: COLORS.text,
+  },
   input: {
     padding: 15,
     fontSize: 16,
     minHeight: 120,
     textAlignVertical: 'top',
+    color: COLORS.text,
+  },
+  wordCount: {
+    textAlign: 'right',
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  wordCountError: {
+    color: COLORS.error,
   },
   imagePreviewContainer: {
     padding: 15,
@@ -224,6 +283,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
     alignSelf: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,

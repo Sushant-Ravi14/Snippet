@@ -1,5 +1,15 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
+import { UPLOADS_BASE_URL } from './config';
+
+export const getAvatarUrl = (avatar, username) => {
+  if (avatar && avatar !== 'default-avatar.png') {
+    return avatar.startsWith('http') ? avatar : `${UPLOADS_BASE_URL}/${avatar}`;
+  }
+  const initial = username ? username.charAt(0).toUpperCase() : 'U';
+  return `https://ui-avatars.com/api/?name=${initial}&background=3B82F6&color=fff&size=256`;
+};
+import { Platform } from 'react-native';
 
 export const compressImage = async (uri) => {
   try {

@@ -1,6 +1,7 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, StatusBar } from 'react-native';
+import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { COLORS } from '../src/utils/config';
 
@@ -37,8 +38,12 @@ const InitialLayout = () => {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <ThemeProvider value={DarkTheme}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
+

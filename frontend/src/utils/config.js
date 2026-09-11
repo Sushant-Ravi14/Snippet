@@ -4,23 +4,22 @@ import { Platform } from 'react-native';
 
 const getHost = () => {
   if (Platform.OS === 'web') return 'localhost';
-  if (Platform.OS === 'android') return '10.211.149.235';
-  return '10.211.149.235';
+  // Use the laptop's local LAN IP so physical phones on the same WiFi can connect
+  return '192.168.1.75';
 };
 
-const HOST = getHost();
-export const API_BASE_URL = `http://${HOST}:5000/api`;
-export const UPLOADS_BASE_URL = `http://${HOST}:5000`;
+export const API_BASE_URL = `https://snippet-j541.onrender.com/api`;
+export const UPLOADS_BASE_URL = `https://snippet-j541.onrender.com`;
 
 export const PAGE_SIZE = 10;
 
 export const COLORS = {
-  primary: '#0a7ea4',
-  background: '#ffffff',
-  text: '#11181C',
-  textMuted: '#687076',
-  border: '#e6e8eb',
-  error: '#ff4d4f',
-  success: '#52c41a',
-  surface: '#f8f9fa',
+  primary: '#3B82F6',
+  background: '#121212',
+  text: '#F3F4F6',
+  textMuted: '#9CA3AF',
+  border: '#2C2C2C',
+  error: '#EF4444',
+  success: '#22C55E',
+  surface: '#1E1E1E',
 };

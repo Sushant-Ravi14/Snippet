@@ -1,12 +1,47 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, UPLOADS_BASE_URL } from '../utils/config';
-import { timeAgo } from '../utils/helpers';
+import { timeAgo, getAvatarUrl } from '../utils/helpers';
 import { useRouter } from 'expo-router';
-// We'll use simple text for icons if no vector icons, but Expo includes @expo/vector-icons
-// We can just use text like '👍' if not sure, but Expo blank template should have vector-icons.
-// To be safe and minimal without extra deps, we'll use text emoji if not explicitly told.
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+const PostImage = ({ uri }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  if (!uri) return null;
+
+  if (error) {
+    return (
+      <View style={[styles.postImage, styles.imageFallback]}>
+        <Ionicons name="image-outline" size={40} color={COLORS.textMuted} />
+        <Text style={{ color: COLORS.textMuted, marginTop: 6, fontSize: 12 }}>Image unavailable</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      {loading && (
+        <View style={[styles.postImage, styles.imageLoading]}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        </View>
+      )}
+      <Image
+        source={{ uri }}
+        style={[styles.postImage, loading && { height: 0 }]}
+        resizeMode="cover"
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          setError(true);
+        }}
+      />
+    </View>
+  );
+};
 
 const PostCard = ({ post, onLike, onDislike, hideActions = false }) => {
   const router = useRouter();
@@ -23,12 +58,14 @@ const PostCard = ({ post, onLike, onDislike, hideActions = false }) => {
     }
   };
 
-  const avatarSource = post.author.avatar.startsWith('http')
-    ? post.author.avatar
-    : `${UPLOADS_BASE_URL}/${post.author.avatar}`;
+  const authorUsername = post.author?.username || 'deleted_user';
+  const authorAvatar = post.author?.avatar;
+  const avatarSource = getAvatarUrl(authorAvatar, authorUsername);
 
   const imageSource = post.image
-    ? (post.image.startsWith('http') ? post.image : `${UPLOADS_BASE_URL}${post.image}`)
+    ? (post.image.startsWith('data:') || post.image.startsWith('http') 
+        ? post.image 
+        : `${UPLOADS_BASE_URL}${post.image}`)
     : null;
 
   return (
@@ -39,11 +76,10 @@ const PostCard = ({ post, onLike, onDislike, hideActions = false }) => {
           <Image
             source={{ uri: avatarSource }}
             style={styles.avatar}
-            contentFit="cover"
-            cachePolicy="memory-disk"
+            resizeMode="cover"
           />
           <View>
-            <Text style={styles.username}>@{post.author.username}</Text>
+            <Text style={styles.username}>@{authorUsername}</Text>
             <Text style={styles.time}>{timeAgo(post.createdAt)}</Text>
           </View>
         </TouchableOpacity>
@@ -51,21 +87,16 @@ const PostCard = ({ post, onLike, onDislike, hideActions = false }) => {
 
       {/* Body */}
       <TouchableOpacity onPress={navigateToPost} activeOpacity={0.9}>
+        {post.title ? <Text style={styles.postTitle}>{post.title}</Text> : null}
         {post.text ? <Text style={styles.text}>{post.text}</Text> : null}
-        {imageSource ? (
-          <Image
-            source={{ uri: imageSource }}
-            style={styles.postImage}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-          />
-        ) : null}
+        {imageSource ? <PostImage uri={imageSource} /> : null}
       </TouchableOpacity>
 
       {/* Location */}
       {post.location?.locality ? (
         <View style={styles.locationChip}>
-          <Text style={styles.locationText}>📍 {post.location.locality}</Text>
+          <Ionicons name="location" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+          <Text style={styles.locationText}>{post.location.locality}</Text>
         </View>
       ) : null}
 
@@ -74,19 +105,29 @@ const PostCard = ({ post, onLike, onDislike, hideActions = false }) => {
         <View style={styles.actionsBar}>
           <View style={styles.actionGroup}>
             <TouchableOpacity onPress={() => onLike(post._id)} style={styles.actionBtn}>
+              <Ionicons 
+                name={post.likedByMe ? "thumbs-up" : "thumbs-up-outline"} 
+                size={22} 
+                color={post.likedByMe ? COLORS.primary : COLORS.textMuted} 
+              />
               <Text style={post.likedByMe ? styles.actionActive : styles.actionInactive}>
-                {post.likedByMe ? '👍' : '👍🏻'} {post.likesCount}
+                {post.likesCount}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => onDislike(post._id)} style={styles.actionBtn}>
+              <Ionicons 
+                name={post.dislikedByMe ? "thumbs-down" : "thumbs-down-outline"} 
+                size={22} 
+                color={post.dislikedByMe ? COLORS.primary : COLORS.textMuted} 
+              />
               <Text style={post.dislikedByMe ? styles.actionActive : styles.actionInactive}>
-                {post.dislikedByMe ? '👎' : '👎🏻'} {post.dislikesCount}
+                {post.dislikesCount}
               </Text>
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity onPress={navigateToPost} style={styles.actionBtn}>
-            <Text style={styles.actionInactive}>💬 Comment</Text>
+            <Ionicons name="chatbubble-outline" size={22} color={COLORS.textMuted} />
           </TouchableOpacity>
         </View>
       )}
@@ -126,6 +167,13 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
   },
+  postTitle: {
+    paddingHorizontal: 15,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 5,
+  },
   text: {
     paddingHorizontal: 15,
     fontSize: 15,
@@ -133,11 +181,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   postImage: {
-    width: '100%',
+    width: SCREEN_WIDTH,
     height: 300,
     backgroundColor: COLORS.surface,
   },
+  imageLoading: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageFallback: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   locationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 15,
     marginTop: 8,
   },
@@ -156,8 +214,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginRight: 20,
     paddingVertical: 5,
+    gap: 6,
   },
   actionInactive: {
     color: COLORS.textMuted,
@@ -171,3 +232,4 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(PostCard);
+
