@@ -7,12 +7,16 @@ const postSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    title: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
     text: {
       type: String,
-      maxlength: 500,
     },
     image: {
-      type: String, // path to image
+      type: String,
     },
     location: {
       locality: String,

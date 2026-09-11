@@ -5,10 +5,15 @@ const Notification = require('../models/Notification');
 const formatPostResponse = (post, currentUserId) => {
   return {
     _id: post._id,
-    author: {
+    title: post.title,
+    author: post.author ? {
       _id: post.author._id,
       username: post.author.username,
       avatar: post.author.avatar,
+    } : {
+      _id: 'deleted',
+      username: 'deleted_user',
+      avatar: 'default-avatar.png'
     },
     text: post.text,
     image: post.image,
@@ -26,7 +31,7 @@ const formatPostResponse = (post, currentUserId) => {
 // @access  Private
 const createPost = async (req, res, next) => {
   try {
-    const { text, latitude, longitude, locality } = req.body;
+    const { title, text, latitude, longitude, locality } = req.body;
     let imagePath = null;
 
     if (req.file) {
@@ -44,6 +49,7 @@ const createPost = async (req, res, next) => {
 
     const post = await Post.create({
       author: req.user._id,
+      title,
       text,
       image: imagePath,
       location,
